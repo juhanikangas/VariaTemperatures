@@ -1,7 +1,7 @@
 /** @format */
 
 import '../styles/globals.css';
-import './App.css';
+import './_app.css';
 import React from 'react';
 import ThermoMeter from '../images/ThermoWhite.png';
 import Image from 'next/image';
@@ -12,7 +12,6 @@ import SWIcon from '../images/Star-Wars-PNG-Image-84345.png';
 import axios from 'axios';
 import AudioPlayer from 'react-h5-audio-player';
 
-
 class App extends React.Component {
 	state = {
 		DeviceData: [],
@@ -21,7 +20,7 @@ class App extends React.Component {
 	//fethes all device units and their history from backend
 	doEveryHour() {
 		axios.get('http://localhost:5000/api/getHistory').then((response) => {
-			console.log(response);
+			console.log(response.data);
 			this.setState({ DeviceData: response.data });
 			console.log(this.state.DeviceData);
 		});

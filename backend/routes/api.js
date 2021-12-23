@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
 const unitCollection = require('../models/unitCollection');
-const token = 'b7caca7f36fdb2bbc42998b31c4c93833994fe39';
+const token = 'classified';
 const authorizationHeader = 'Bearer ' + token;
 const reqOpt = {
 	method: 'GET',
@@ -149,6 +149,7 @@ async function updateHistory() {
 			.catch((err) => console.log(err));
 	});
 }
+
 //deletes devices history if its older than 5 years, so the database wont get full
 async function deleteOldHistory() {
 	const fiveYearsAgo = new Date().getTime() - 157788000000;
@@ -157,6 +158,7 @@ async function deleteOldHistory() {
 		.then((data) => {})
 		.catch((err) => console.log(err));
 }
+
 //returns data from the devices to frontend
 router.get('/getHistory', async (req, res) => {
 	await unitCollection
