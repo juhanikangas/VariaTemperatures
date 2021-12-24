@@ -1,7 +1,6 @@
-/** @format */
 
 import '../styles/globals.css';
-import './_app.css';
+import './App.css';
 import React from 'react';
 import ThermoMeter from '../images/ThermoWhite.png';
 import Image from 'next/image';
@@ -10,29 +9,33 @@ import SWIntro from '../images/StarWars.mp3';
 import DeathStar from '../images/Death-Star-SWCT.png';
 import SWIcon from '../images/Star-Wars-PNG-Image-84345.png';
 import axios from 'axios';
-import AudioPlayer from 'react-h5-audio-player';
-
+import ReactPlayer from 'react-player';
+import { particleData } from '../variables-functions/particles.js';
+import { Line } from 'react-chartjs-2';
+import Chart from 'chart.js/auto'
+import { CategoryScale } from 'chart.js';
+Chart.register(CategoryScale)
 class App extends React.Component {
 	state = {
 		DeviceData: [],
+		playing: false,
 	};
 
-	//fethes all device units and their history from backend
-	doEveryHour() {
-		axios.get('http://localhost:5000/api/getHistory').then((response) => {
-			console.log(response.data);
-			this.setState({ DeviceData: response.data });
-			console.log(this.state.DeviceData);
+	async doEveryHour() {
+		await axios.get('http://localhost:5000/api/getHistory').then((response) => {
+			const WithOpensData = response.data.map(v => ({...v, Open: false}))
+			this.setState({ DeviceData: WithOpensData });
 		});
-	}
 
+		console.log(this.state.DeviceData);
+	}
 	componentDidMount() {
 		this.doEveryHour();
 		this.interval = setInterval(() => this.doEveryHour(), 40000);
 	}
 
-	//star wars intro easter egg
 	play() {
+		this.setState({ playing: true });
 		window.scrollTo({
 			top: 0,
 			behavior: 'smooth',
@@ -56,6 +59,7 @@ class App extends React.Component {
 			document.getElementById('SWIcon').style.animation = 'logo 15s ease-out';
 			setTimeout(function () {
 				document.getElementById('SWIcon').style.opacity = '0%';
+				document.getElementById('SWIcon').style.width = '1px';
 			}, 15000);
 		}, 2000);
 
@@ -64,125 +68,75 @@ class App extends React.Component {
 			document.getElementById('scroller').style.width = '0px';
 			document.getElementById('Main').style.transition = '2s';
 			document.getElementById('Main').style.opacity = '100%';
+			this.setState({ playing: false });
 		}, 78500);
 	}
-
+	setOpen(id) {
+		let tempData = this.state.DeviceData
+		for (var i = 0; i < tempData.length; i++) {
+			if (tempData[i].UnitID === id) {
+				if (tempData[i].Open) {
+					tempData[i].Open = false
+				} else {
+					tempData[i].Open = true;
+				}
+				this.setState({ DeviceData: tempData })
+				console.log(this.state.DeviceData)
+				return;
+			}
+		}
+	}
 	render() {
+		const data = {
+			labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+			datasets: [
+				{
+					label: 'HUM',
+					fill: false,
+					lineTension: 0.5,
+					backgroundColor: 'rgba(75,192,192,0.4)',
+					borderColor: 'rgba(75,192,192,1)',
+					borderCapStyle: 'butt',
+					borderDash: [],
+					borderDashOffset: 0.0,
+					borderJoinStyle: 'miter',
+					pointBorderColor: 'rgba(75,192,192,1)',
+					pointBackgroundColor: '#fff',
+					pointBorderWidth: 1,
+					pointHoverRadius: 5,
+					pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+					pointHoverBorderColor: 'rgba(220,220,220,1)',
+					pointHoverBorderWidth: 2,
+					pointRadius: 1,
+					pointHitRadius: 10,
+					data: [65, 59, 80, 81, 56, 55, 40]
+				},
+				{
+					label: 'TEMP',
+					fill: false,
+					lineTension: 0.5,
+					backgroundColor: 'rgba(175,30,10,0.6)',
+					borderColor: 'rgba(175,30,10,0.6)',
+					borderCapStyle: 'butt',
+					borderDash: [],
+					borderDashOffset: 0.0,
+					borderJoinStyle: 'miter',
+					pointBorderColor: 'rgba(75,192,192,1)',
+					pointBackgroundColor: '#fff',
+					pointBorderWidth: 1,
+					pointHoverRadius: 5,
+					pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+					pointHoverBorderColor: 'rgba(220,220,220,1)',
+					pointHoverBorderWidth: 2,
+					pointRadius: 1,
+					pointHitRadius: 10,
+					data: [25, 47, 60, 73, 86, 54, 40,]
+				}
+			]
+		};
 		return (
 			<div id='App' className='App'>
-				<Particles
-					params={{
-						particles: {
-							number: {
-								value: 150,
-								density: {
-									enable: true,
-									value_area: 500,
-								},
-							},
-							color: {
-								value: '#ffffff',
-							},
-							shape: {
-								type: 'circle',
-								stroke: {
-									width: 0,
-									color: '#000000',
-								},
-								polygon: {
-									nb_sides: 5,
-								},
-								image: {
-									src: 'img/github.svg',
-									width: 100,
-									height: 100,
-								},
-							},
-							opacity: {
-								value: 0.5,
-								random: true,
-								anim: {
-									enable: true,
-									speed: 0.1,
-									opacity_min: 0.2,
-									sync: false,
-								},
-							},
-							size: {
-								value: 1,
-								random: true,
-								anim: {
-									enable: true,
-									speed: 1,
-									size_min: 0.5,
-									sync: false,
-								},
-							},
-							line_linked: {
-								enable: false,
-								distance: 150,
-								color: '#ffffff',
-								opacity: 0.4,
-								width: 1,
-							},
-							move: {
-								enable: true,
-								speed: 0.1,
-								direction: 'none',
-								random: false,
-								straight: false,
-								out_mode: 'out',
-								bounce: false,
-								attract: {
-									enable: false,
-									rotateX: 600,
-									rotateY: 1200,
-								},
-							},
-						},
-						interactivity: {
-							detect_on: 'canvas',
-							events: {
-								onhover: {
-									enable: false,
-									mode: 'grab',
-								},
-								onclick: {
-									enable: true,
-									mode: 'push',
-								},
-								resize: true,
-							},
-							modes: {
-								grab: {
-									distance: 140,
-									line_linked: {
-										opacity: 1,
-									},
-								},
-								bubble: {
-									distance: 400,
-									size: 40,
-									duration: 2,
-									opacity: 8,
-									speed: 3,
-								},
-								repulse: {
-									distance: 200,
-									duration: 0.4,
-								},
-								push: {
-									particles_nb: 4,
-								},
-								remove: {
-									particles_nb: 2,
-								},
-							},
-						},
-						retina_detect: true,
-					}}
-					id='bg'
-				/>
+				<Particles params={particleData} id='bg' />
 				<div id='Main'>
 					<link rel='preconnect' href='https://fonts.googleapis.com' />
 					<link rel='preconnect' href='https://fonts.gstatic.com' />
@@ -199,31 +153,49 @@ class App extends React.Component {
 					<div className='containers'>
 						{this.state.DeviceData.map((unit, i) => {
 							let RightClass = unit.Online ? 'containerOnline' : 'containerOffline';
-							return (
-								<div key={i} className={RightClass}>
-									<p style={{ userSelect: 'none' }} className='text'>
-										{unit.Name}
-									</p>
-									<p style={{ userSelect: 'none' }} className='text'>
-										{unit.Online ? 'Online' : 'Offline'}
-									</p>
-									<p style={{ userSelect: 'none' }} className='text' id='data'>
-										{unit.Humidity}% H₂O
-									</p>
-									<p style={{ userSelect: 'none' }} className='text' id='data'>
-										{unit.Temperature}℃
-									</p>
-								</div>
-							);
+							let classNumber = 'Class ' + unit.Name.replace(/\D/g, '');
+
+							if (unit.Open) {
+								return (
+									<div key={unit.UnitID} className={"containerOpen"} onClick={() => this.setOpen(unit.UnitID)}>
+
+										<div className="Chart">
+											<p style={{ userSelect: "none" }} className='text'>{unit.Name} {unit.Online ? 'Online' : 'Offline'}</p>
+											<Line
+												data={data}
+												width={300}
+												height={200}
+											/>
+										</div>
+									</div>
+								);
+							} else {
+								return (
+									<div id={unit.UnitID} key={i} className={RightClass} onClick={() => this.setOpen(unit.UnitID)}>
+										<p style={{ userSelect: 'none' }} className='text'>
+											{classNumber}
+										</p>
+										<p style={{ userSelect: 'none' }} className='text'>
+											{unit.Online ? 'Online' : 'Offline'}
+										</p>
+										<p style={{ userSelect: 'none' }} className='text' id='data'>
+											{unit.Humidity}% H₂O
+										</p>
+										<p style={{ userSelect: 'none' }} className='text' id='data'>
+											{unit.Temperature}℃
+										</p>
+									</div>
+								);
+							}
 						})}
 					</div>
-					<AudioPlayer
-						src={(require = SWIntro)}
-						onPlay={(e) => this.play()}
-						onPlayError={(e) => console.log('NOT WORK')}
-						volume={0.01}
-					/>
-					<Image src={DeathStar} width='55' height='55' />
+					<ReactPlayer url={SWIntro} playing={this.state.playing} volume={0.3} />
+					<Image src={DeathStar} width='55' height='55' onClick={() => this.play()} />
+					{/*<Line
+						data={data}
+						width={10}
+						height={10}
+					/>*/}
 				</div>
 				<div id='scroller'>
 					<div id='content'>

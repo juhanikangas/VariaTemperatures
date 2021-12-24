@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
 const unitCollection = require('../models/unitCollection');
-const token = 'classified';
+const token = 'b7caca7f36fdb2bbc42998b31c4c93833994fe39';
 const authorizationHeader = 'Bearer ' + token;
 const reqOpt = {
 	method: 'GET',
@@ -17,19 +17,15 @@ const DeviceData = [];
 let firstRender = true;
 let unitIndex = 0;
 doEveryHour();
-setInterval(() => doEveryHour(), 60000);
+setInterval(() => doEveryHour(), 3600000);
 
-//checks if given item is in the unit id list already
 function checkIfNew(item) {
 	if (unit_id_list.includes(item.id)) {
 		return false;
 	}
 	return true;
 }
-
-//fetches devices from particle.io and checks if there are any new devices configured and if there is it pushes it to mongo db
 async function doEveryHour() {
-	let itemAdded = false;
 	await fetch('https://api.particle.io/v1/devices', reqOpt)
 		.then((response) => response.json())
 		.then((data) => {
@@ -38,7 +34,6 @@ async function doEveryHour() {
 				if (item.name !== null) {
 					if (item.name.includes('TempHum')) {
 						if (checkIfNew(item)) {
-							itemAdded = true;
 							unit_id_list.push(item.id);
 							mapStats(
 								{
@@ -54,18 +49,13 @@ async function doEveryHour() {
 					}
 				}
 			}
-			if (itemAdded) {
-				addUnits(DeviceData);
-				itemAdded = false;
-			}
 			updateStats(unit_id_list[0]);
+			addUnits(DeviceData);
 		})
 		.catch((error) => {
 			console.log(error);
 		});
 }
-
-//fetches new data from particle.io and pushes it to mongodb
 async function updateStats(UpdatedUnit) {
 	const url = 'https://api.particle.io/v1/devices/' + UpdatedUnit;
 	let Tem = '0';
@@ -106,7 +96,6 @@ async function updateStats(UpdatedUnit) {
 	}
 }
 
-//Device data has all current data of the devices, this function updates the variable so it has all the newest data
 function mapStats(data, update) {
 	if ((update === false) & (firstRender === true)) {
 		DeviceData.push(data);
@@ -115,7 +104,6 @@ function mapStats(data, update) {
 	}
 }
 
-//adds a new unit to mongo db
 async function addUnits(DeviceData) {
 	const addedUnits = [];
 	await DeviceData.forEach((unit) => {
@@ -133,7 +121,6 @@ async function addUnits(DeviceData) {
 	});
 }
 
-//adds new data to the devices in mongo db
 async function updateHistory() {
 	await DeviceData.forEach((unit) => {
 		const dateInMilliseconds = new Date().getTime();
@@ -149,8 +136,6 @@ async function updateHistory() {
 			.catch((err) => console.log(err));
 	});
 }
-
-//deletes devices history if its older than 5 years, so the database wont get full
 async function deleteOldHistory() {
 	const fiveYearsAgo = new Date().getTime() - 157788000000;
 	await unitCollection
@@ -158,8 +143,6 @@ async function deleteOldHistory() {
 		.then((data) => {})
 		.catch((err) => console.log(err));
 }
-
-//returns data from the devices to frontend
 router.get('/getHistory', async (req, res) => {
 	await unitCollection
 		.find()
@@ -172,6 +155,7 @@ router.get('/getHistory', async (req, res) => {
 					Temperature: unit.unitHistory[unit.unitHistory.length - 1].Temperature,
 					Humidity: unit.unitHistory[unit.unitHistory.length - 1].Humidity,
 					Online: unit.unitHistory[unit.unitHistory.length - 1].Online,
+					History: unit.unitHistory,
 				});
 			});
 			res.json(deviceData);
