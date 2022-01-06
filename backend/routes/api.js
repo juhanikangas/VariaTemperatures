@@ -1,10 +1,12 @@
 /** @format */
+require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
 const unitCollection = require('../models/unitCollection');
 const token = 'b7caca7f36fdb2bbc42998b31c4c93833994fe39';
 const authorizationHeader = 'Bearer ' + token;
+
 const reqOpt = {
 	method: 'GET',
 	headers: {
@@ -25,7 +27,10 @@ function checkIfNew(item) {
 	}
 	return true;
 }
+
+
 async function doEveryHour() {
+	getHistory()
 	await fetch('https://api.particle.io/v1/devices', reqOpt)
 		.then((response) => response.json())
 		.then((data) => {
@@ -56,6 +61,40 @@ async function doEveryHour() {
 			console.log(error);
 		});
 }
+
+async function updateRestDB(deviceData) {
+	const apiKey = process.env.REST_APIKEY
+	const restUrl = process.env.REST_URL
+	const options = {
+		method: 'GET',
+		headers: {
+			'cache-control': 'no-cache',
+			'Content-Type': 'application/json',
+		},
+	};
+	fetch(restUrl + apiKey, options).then((resp) => resp.json())
+		.then((data) => {
+
+			async function cleanRest(data) {
+				options.method = 'DELETE'
+				await Promise.all((data).map(u => {
+					const urlForDelete = restUrl + "/" + u._id + apiKey
+					fetch(urlForDelete, options).then((res) => res.json())
+				}))
+			}
+
+			async function setRest() {
+				options.method = 'POST'
+				options.json = true
+				options.body = JSON.stringify(deviceData)
+				await Promise.all([fetch(restUrl + apiKey, options).then((res) => res.json())])
+			}
+
+			cleanRest(data)
+			setRest()
+		})
+}
+
 async function updateStats(UpdatedUnit) {
 	const url = 'https://api.particle.io/v1/devices/' + UpdatedUnit;
 	let Tem = '0';
@@ -96,6 +135,7 @@ async function updateStats(UpdatedUnit) {
 	}
 }
 
+
 function mapStats(data, update) {
 	if ((update === false) & (firstRender === true)) {
 		DeviceData.push(data);
@@ -132,7 +172,7 @@ async function updateHistory() {
 		};
 		unitCollection
 			.updateOne({ unitID: unit.UnitID }, { $push: { unitHistory: newData } })
-			.then((data) => {})
+			.then((data) => { })
 			.catch((err) => console.log(err));
 	});
 }
@@ -140,9 +180,30 @@ async function deleteOldHistory() {
 	const fiveYearsAgo = new Date().getTime() - 157788000000;
 	await unitCollection
 		.updateMany({}, { $pull: { unitHistory: { Date: { $lt: fiveYearsAgo } } } })
-		.then((data) => {})
+		.then((data) => { })
 		.catch((err) => console.log(err));
 }
+
+async function getHistory() {
+	await unitCollection
+		.find()
+		.then((data) => {
+			const deviceData = [];
+			data.forEach((unit) => {
+				deviceData.push({
+					UnitID: unit.unitID,
+					Name: unit.unitName,
+					Temperature: unit.unitHistory[unit.unitHistory.length - 1].Temperature,
+					Humidity: unit.unitHistory[unit.unitHistory.length - 1].Humidity,
+					Online: unit.unitHistory[unit.unitHistory.length - 1].Online,
+					History: unit.unitHistory,
+				});
+			});
+			updateRestDB(deviceData)
+		})
+		.catch((err) => console.log(err));
+};
+
 router.get('/getHistory', async (req, res) => {
 	await unitCollection
 		.find()
@@ -162,5 +223,7 @@ router.get('/getHistory', async (req, res) => {
 		})
 		.catch((err) => console.log(err));
 });
+
+
 
 module.exports = router;
