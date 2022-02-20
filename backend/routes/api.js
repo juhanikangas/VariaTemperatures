@@ -4,7 +4,6 @@ const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
 const unitCollection = require('../models/unitCollection');
-const token = 'b7caca7f36fdb2bbc42998b31c4c93833994fe39';
 const authorizationHeader = 'Bearer ' + token;
 
 const reqOpt = {
