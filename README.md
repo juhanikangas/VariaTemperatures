@@ -2,5 +2,5 @@
  
  A website that shows our schools rooms past and current temperatures and humidty.
  
- Currently running at https://www.elwis.fi/
+ The website is not in use anymore
  Made by me & https://github.com/FLATISHKA
